@@ -1,0 +1,121 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+}
+
+header {
+    background-color: #337ab7; /* Azul */
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+}
+
+main {
+    padding: 20px;
+    max-width: 1200px;
+    margin: auto;
+}
+
+#input-section, #output-section {
+    background-color: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+h2 {
+    margin-top: 0;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="date"], textarea, select {
+    width: calc(100% - 22px); /* Ajustar padding y border */
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+textarea {
+    resize: vertical;
+}
+
+button {
+    display: inline-block;
+    background-color: #5cb85c; /* Verde */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 10px;
+    margin-top: 10px; /* Espacio superior para botones */
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+#downloadPdfButton {
+    background-color: #f0ad4e; /* Naranja */
+}
+
+#clearButton {
+    background-color: #d9534f; /* Rojo */
+}
+
+#calendarTableContainer table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 0.9em; /* Un poco más pequeño para que quepa más */
+}
+
+#calendarTableContainer th, #calendarTableContainer td {
+    border: 1px solid #ddd;
+    padding: 8px; /* Reducir padding para compacidad */
+    text-align: left;
+}
+
+#calendarTableContainer th {
+    background-color: #337ab7; /* Azul para encabezados de tabla */
+    color: white;
+    font-weight: bold;
+}
+#calendarTableContainer tr:nth-child(even) {
+    background-color: #f9f9f9; /* Filas alternas */
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    background-color: #333;
+    color: #fff;
+}
+
+/* Ocultar elementos que no queremos imprimir con window.print (aunque ahora usamos PDF) */
+@media print {
+    body > header, body > main > #input-section, body > footer, #downloadPdfButton, #clearButton, #generateButton {
+        display: none !important;
+    }
+    body > main, body > main > #output-section {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        border: none;
+    }
+}

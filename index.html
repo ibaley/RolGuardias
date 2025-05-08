@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Calendario de Guardias CPR</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Calendario de Guardias CPR ABC</h1>
+    </header>
+
+    <main>
+        <section id="input-section">
+            <h2>Configuración del Rol</h2>
+            <div>
+                <label for="startDate">Fecha de Inicio del Rol:</label>
+                <input type="date" id="startDate" name="startDate" required>
+            </div>
+            <div>
+                <label for="numWeeks">Número de Semanas:</label>
+                <select id="numWeeks" name="numWeeks">
+                    <option value="52" selected>52 Semanas</option>
+                    <option value="53">53 Semanas</option>
+                </select>
+            </div>
+            <div>
+                <label for="santaFeNames">Personal Santa Fe (un nombre por línea):</label>
+                <textarea id="santaFeNames" name="santaFeNames" rows="10" placeholder="Eduardo Villasenor Villalpando&#10;Ana Menendez Skertchly&#10;..."></textarea>
+            </div>
+            <div>
+                <label for="observatorioNames">Personal Observatorio (un nombre por línea):</label>
+                <textarea id="observatorioNames" name="observatorioNames" rows="10" placeholder="Martín Pérez Vasconcelos&#10;Lourdes Ortega Caudillo&#10;..."></textarea>
+            </div>
+            <button id="generateButton">Generar Calendario</button>
+            <button id="downloadPdfButton" style="display:none;">Descargar PDF</button>
+            <button id="clearButton">Limpiar Campos</button>
+        </section>
+
+        <section id="output-section">
+            <h2>Calendario Generado</h2>
+            <div id="calendarTableContainer">
+                <!-- El calendario se insertará aquí por JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Tu Organización</p>
+    </footer>
+
+    <!-- jsPDF y jsPDF-AutoTable (asegúrate que las versiones sean compatibles o usa las últimas) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
