@@ -16,12 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
     const diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
-    // Almacenar los datos del calendario para el PDF
-    let calendarioParaPDF = {
-        headers: ["Fecha", "Santa Fe - 2do Llamado", "Santa Fe - 1er Llamado", "Observatorio - 2do Llamado", "Observatorio - 1er Llamado"],
-        data: [],
+    // Almacenar los datos del calendario para el PDF y la tabla HTML
+    let calendarioGenerado = {
+        columnHeaders: ["Fecha", "Santa Fe - 2do Llamado", "Santa Fe - 1er Llamado", "Observatorio - 2do Llamado", "Observatorio - 1er Llamado"],
+        dataRows: [],
         fechaInicioOriginal: null,
-        fechaFinOriginal: null
+        fechaFinOriginal: null // Se calculará al generar
     };
 
     // --- Funciones Auxiliares ---
@@ -34,8 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getNextThursday(date) {
-        const d = new Date(date.valueOf()); // Clonar fecha
-        const dayOfWeek = d.getDay(); // 0 for Sunday, ..., 4 for Thursday
+        const d = new Date(date.valueOf());
+        const dayOfWeek = d.getDay();
         const daysUntilThursday = (4 - dayOfWeek + 7) % 7;
         d.setDate(d.getDate() + daysUntilThursday);
         return d;
@@ -62,68 +62,67 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('cprObservatorioNames', observatorioNamesTextarea.value);
     }
 
-    // --- Generación de PDF ---
+    // --- Generación de PDF Estilo Compacto ---
     function generarYDescargarPDFEstiloCompacto() {
-        if (calendarioParaPDF.data.length === 0) {
+        if (calendarioGenerado.dataRows.length === 0) {
             alert("Primero genera el calendario para poder crear el PDF.");
             return;
         }
 
         const doc = new jsPDF({
-            orientation: 'l', // landscape para mejor ajuste de columnas
+            orientation: 'l',
             unit: 'mm',
             format: 'a4'
         });
 
         const tituloPrincipal = "Calendario de Guardias CPR ABC";
-        let fechaFinCalculada = new Date(calendarioParaPDF.fechaInicioOriginal);
-        fechaFinCalculada.setDate(fechaFinCalculada.getDate() + (parseInt(numWeeksSelect.value) * 7) - 7);
-        
-        const periodoStr = `Periodo: ${formatDate(calendarioParaPDF.fechaInicioOriginal, false)} - ${formatDate(fechaFinCalculada, false)}`;
+        const periodoStr = `Periodo: ${formatDate(calendarioGenerado.fechaInicioOriginal, false)} - ${formatDate(calendarioGenerado.fechaFinOriginal, false)}`;
+
+        const pdfHeaders = [calendarioGenerado.columnHeaders]; // Usa los headers definidos
+        const pdfData = calendarioGenerado.dataRows.map(row => [
+            row.fecha,
+            row.sf2do, 
+            row.sf1er, 
+            row.obs2do, 
+            row.obs1er  
+        ]);
 
         doc.autoTable({
-            head: [calendarioParaPDF.headers],
-            body: calendarioParaPDF.data,
-            startY: 18, // Dejar un poco de espacio para el título y subtítulo
-            margin: { top: 15, right: 7, bottom: 10, left: 7 }, // Márgenes reducidos
+            head: pdfHeaders,
+            body: pdfData,
+            startY: 18,
+            margin: { top: 15, right: 7, bottom: 10, left: 7 },
             styles: {
                 font: 'helvetica',
-                fontSize: 7, // Tamaño de fuente pequeño
-                cellPadding: 1.5, // Padding de celda reducido
-                overflow: 'ellipsize', // Cortar texto largo con '...'
+                fontSize: 7,
+                cellPadding: 1.5,
+                overflow: 'ellipsize',
                 valign: 'middle'
             },
             headStyles: {
-                fillColor: [220, 220, 220], // Gris claro para encabezados
+                fillColor: [220, 220, 220],
                 textColor: [0, 0, 0],
                 fontStyle: 'bold',
-                fontSize: 7.5, // Un poco más grande para encabezados
+                fontSize: 7.5,
                 halign: 'center'
             },
             alternateRowStyles: {
-                fillColor: [248, 248, 248] // Un gris muy sutil para filas alternas
+                fillColor: [248, 248, 248]
             },
             didDrawPage: function (data) {
-                // Título Principal
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
                 doc.text(tituloPrincipal, data.settings.margin.left, 8);
-
-                // Subtítulo (Periodo)
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'normal');
                 doc.text(periodoStr, data.settings.margin.left, 13);
-
-                // Pie de Página (Número de Página)
                 const pageCount = doc.internal.getNumberOfPages();
                 doc.setFontSize(7);
                 doc.text('Página ' + data.pageNumber + ' de ' + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 5);
             }
         });
-
         doc.save('Calendario_Guardias_CPR_Compacto.pdf');
     }
-
 
     // --- Event Handlers ---
     generateButton.addEventListener('click', () => {
@@ -133,10 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let firstDateOfRole = new Date(startDateValue + 'T00:00:00'); // Usar T00:00:00 para evitar problemas de zona horaria
+        let firstDateOfRole = new Date(startDateValue + 'T00:00:00Z');
         firstDateOfRole = getNextThursday(firstDateOfRole);
         
-        calendarioParaPDF.fechaInicioOriginal = new Date(firstDateOfRole.valueOf()); // Guardar copia
+        calendarioGenerado.fechaInicioOriginal = new Date(firstDateOfRole.valueOf());
 
         const santaFeNames = parseNames(santaFeNamesTextarea.value);
         const observatorioNames = parseNames(observatorioNamesTextarea.value);
@@ -152,36 +151,47 @@ document.addEventListener('DOMContentLoaded', () => {
             <table>
                 <thead>
                     <tr>
-                        <th>${calendarioParaPDF.headers[0]}</th>
-                        <th>${calendarioParaPDF.headers[1]}</th>
-                        <th>${calendarioParaPDF.headers[2]}</th>
-                        <th>${calendarioParaPDF.headers[3]}</th>
-                        <th>${calendarioParaPDF.headers[4]}</th>
+                        <th>${calendarioGenerado.columnHeaders[0]}</th> <!-- Fecha -->
+                        <th>${calendarioGenerado.columnHeaders[1]}</th> <!-- SF 2do -->
+                        <th>${calendarioGenerado.columnHeaders[2]}</th> <!-- SF 1er -->
+                        <th>${calendarioGenerado.columnHeaders[3]}</th> <!-- Obs 2do -->
+                        <th>${calendarioGenerado.columnHeaders[4]}</th> <!-- Obs 1er -->
                     </tr>
                 </thead>
                 <tbody>
         `;
 
-        calendarioParaPDF.data = []; // Limpiar datos anteriores para el PDF
-        let currentDate = new Date(firstDateOfRole.valueOf()); // Usar copia para iterar
+        calendarioGenerado.dataRows = [];
+        let currentDate = new Date(firstDateOfRole.valueOf());
 
-        let indiceSF2do = 0;
-        let indiceSF1er = 1;
-        let indiceObs2do = 0;
-        let indiceObs1er = 1;
+        // --- LÓGICA DE ÍNDICES INICIALES Y PROGRESIÓN CORREGIDA ---
+        let indiceSF_actual1er = 0; // La primera persona (índice 0) es 1er llamado en sem 1
+        let indiceSF_actual2do = 1; // La segunda persona (índice 1) es 2do llamado en sem 1
+        
+        let indiceObs_actual1er = 0; 
+        let indiceObs_actual2do = 1; 
 
         const numSemanas = parseInt(numWeeksSelect.value) || 52;
 
         for (let i = 0; i < numSemanas; i++) {
-            const sf2do = santaFeNames[indiceSF2do % santaFeNames.length];
-            const sf1er = santaFeNames[indiceSF1er % santaFeNames.length];
-            const obs2do = observatorioNames[indiceObs2do % observatorioNames.length];
-            const obs1er = observatorioNames[indiceObs1er % observatorioNames.length];
+            // Asignación según la nueva lógica
+            const sf1er = santaFeNames[indiceSF_actual1er % santaFeNames.length];
+            const sf2do = santaFeNames[indiceSF_actual2do % santaFeNames.length];
+            const obs1er = observatorioNames[indiceObs_actual1er % observatorioNames.length];
+            const obs2do = observatorioNames[indiceObs_actual2do % observatorioNames.length];
 
             const fechaFormateada = formatDate(currentDate);
-            const filaDatosPDF = [fechaFormateada, sf2do, sf1er, obs2do, obs1er];
-            calendarioParaPDF.data.push(filaDatosPDF);
+            
+            // Guardar en el orden de las columnas definidas en calendarioGenerado.columnHeaders
+            calendarioGenerado.dataRows.push({
+                fecha: fechaFormateada,
+                sf2do: sf2do,       // Corresponde a columnHeaders[1]
+                sf1er: sf1er,       // Corresponde a columnHeaders[2]
+                obs2do: obs2do,     // Corresponde a columnHeaders[3]
+                obs1er: obs1er      // Corresponde a columnHeaders[4]
+            });
 
+            // La tabla HTML también usa el orden de calendarioGenerado.columnHeaders
             htmlTable += `
                 <tr>
                     <td>${fechaFormateada}</td>
@@ -192,12 +202,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             `;
 
-            indiceSF2do++;
-            indiceSF1er++;
-            indiceObs2do++;
-            indiceObs1er++;
+            // Progresión: El que fue 2do llamado esta semana, será 1er llamado la próxima.
+            indiceSF_actual1er = indiceSF_actual2do; 
+            indiceSF_actual2do = (indiceSF_actual2do + 1) % santaFeNames.length; 
+
+            indiceObs_actual1er = indiceObs_actual2do;
+            indiceObs_actual2do = (indiceObs_actual2do + 1) % observatorioNames.length;
+            
+            if (i === numSemanas - 1) { 
+                calendarioGenerado.fechaFinOriginal = new Date(currentDate.valueOf());
+            }
             currentDate.setDate(currentDate.getDate() + 7);
         }
+        // --- FIN DEL AJUSTE DE LÓGICA ---
 
         htmlTable += `</tbody></table>`;
         calendarTableContainer.innerHTML = htmlTable;
@@ -213,13 +230,9 @@ document.addEventListener('DOMContentLoaded', () => {
         observatorioNamesTextarea.value = '';
         calendarTableContainer.innerHTML = '';
         downloadPdfButton.style.display = 'none';
-        calendarioParaPDF.data = []; // Limpiar también los datos para el PDF
-
-        // Opcional: Limpiar localStorage
-        // localStorage.removeItem('cprStartDate');
-        // localStorage.removeItem('cprNumWeeks');
-        // localStorage.removeItem('cprSantaFeNames');
-        // localStorage.removeItem('cprObservatorioNames');
+        calendarioGenerado.dataRows = [];
+        calendarioGenerado.fechaInicioOriginal = null;
+        calendarioGenerado.fechaFinOriginal = null;
     });
 
     // --- Inicialización ---
