@@ -1,3 +1,4 @@
+import { buildCalendarPdfPages } from "./src/calendar-pdf-data.js";
 import { scheduleToCsv } from "./src/csv.js";
 import {
   generateSchedule,
@@ -21,6 +22,7 @@ const elements = {
   searchInput: document.querySelector("#searchInput"),
   generateButton: document.querySelector("#generateButton"),
   pdfButton: document.querySelector("#pdfButton"),
+  calendarPdfButton: document.querySelector("#calendarPdfButton"),
   csvButton: document.querySelector("#csvButton"),
   resetButton: document.querySelector("#resetButton"),
   validationMessages: document.querySelector("#validationMessages"),
@@ -60,6 +62,7 @@ function bindEvents() {
   elements.resetButton.addEventListener("click", resetDefaults);
   elements.csvButton.addEventListener("click", downloadCsv);
   elements.pdfButton.addEventListener("click", downloadPdf);
+  elements.calendarPdfButton.addEventListener("click", downloadCalendarPdf);
   elements.searchInput.addEventListener("input", renderScheduleRows);
   elements.tableViewButton.addEventListener("click", () => setScheduleView("table"));
   elements.monthViewButton.addEventListener("click", () => setScheduleView("month"));
@@ -409,6 +412,161 @@ function downloadPdf() {
     },
   });
   doc.save(`rol-guardias-${currentSchedule.startDateIso}.pdf`);
+}
+
+function downloadCalendarPdf() {
+  if (!currentSchedule) generate();
+  if (!currentSchedule) return;
+
+  const jsPdf = window.jspdf?.jsPDF;
+  if (!jsPdf) {
+    renderAlerts(["No se pudo cargar el exportador PDF."], "error");
+    return;
+  }
+
+  const doc = new jsPdf({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pages = buildCalendarPdfPages(currentSchedule.rows);
+  pages.forEach((page, pageIndex) => {
+    if (pageIndex > 0) doc.addPage();
+    drawCalendarPdfPage(doc, page, pageIndex + 1, pages.length);
+  });
+  doc.save(`rol-guardias-calendario-${currentSchedule.startDateIso}.pdf`);
+}
+
+function drawCalendarPdfPage(doc, page, pageNumber, totalPages) {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 8;
+  const headerY = 9;
+  const gridTop = 22;
+  const dayHeaderHeight = 7;
+  const footerHeight = 6;
+  const gridWidth = pageWidth - margin * 2;
+  const gridHeight = pageHeight - gridTop - margin - footerHeight;
+  const cellWidth = gridWidth / 7;
+  const cellHeight = (gridHeight - dayHeaderHeight) / page.weeks.length;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(27, 29, 35);
+  doc.text(`Rol de Guardias - ${capitalize(page.label)}`, margin, headerY);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(104, 112, 125);
+  doc.text(
+    `${currentSchedule.startDateIso} - ${currentSchedule.endDateIso}`,
+    pageWidth - margin,
+    headerY,
+    { align: "right" },
+  );
+
+  drawCalendarDayHeaders(doc, page, margin, gridTop, cellWidth, dayHeaderHeight);
+  page.weeks.forEach((week, weekIndex) => {
+    week.forEach((cell, dayIndex) => {
+      const x = margin + dayIndex * cellWidth;
+      const y = gridTop + dayHeaderHeight + weekIndex * cellHeight;
+      drawCalendarCell(doc, cell, x, y, cellWidth, cellHeight);
+    });
+  });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(104, 112, 125);
+  doc.text(`Pagina ${pageNumber} de ${totalPages}`, margin, pageHeight - 5);
+}
+
+function drawCalendarDayHeaders(doc, page, x, y, cellWidth, height) {
+  page.dayHeaders.forEach((day, index) => {
+    const cellX = x + index * cellWidth;
+    doc.setFillColor(34, 44, 58);
+    doc.setDrawColor(34, 44, 58);
+    doc.rect(cellX, y, cellWidth, height, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(255, 255, 255);
+    doc.text(day, cellX + cellWidth / 2, y + 4.8, { align: "center" });
+  });
+}
+
+function drawCalendarCell(doc, cell, x, y, width, height) {
+  if (cell.outsideMonth) {
+    doc.setFillColor(245, 247, 248);
+  } else if (cell.assignment) {
+    doc.setFillColor(238, 248, 246);
+  } else {
+    doc.setFillColor(255, 255, 255);
+  }
+
+  doc.setDrawColor(217, 222, 231);
+  doc.rect(x, y, width, height, "FD");
+
+  if (!cell.day) return;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(27, 29, 35);
+  doc.text(String(cell.day), x + 2, y + 5);
+
+  if (!cell.assignment) return;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(5);
+  doc.setTextColor(104, 112, 125);
+  doc.text("jueves", x + width - 2, y + 5, { align: "right" });
+
+  const maxY = y + height - 2;
+  let textY = y + 9;
+  textY = drawCalendarPdfRole(doc, "SF 2", cell.assignment.santaFeSecond, x + 2, textY, width - 4, maxY);
+  textY = drawCalendarPdfRole(doc, "SF 1", cell.assignment.santaFeFirst, x + 2, textY, width - 4, maxY);
+  textY = drawCalendarPdfRole(doc, "OB 2", cell.assignment.observatorioSecond, x + 2, textY, width - 4, maxY);
+  drawCalendarPdfRole(doc, "OB 1", cell.assignment.observatorioFirst, x + 2, textY, width - 4, maxY);
+}
+
+function drawCalendarPdfRole(doc, label, name, x, y, maxWidth, maxY) {
+  if (y > maxY) return y;
+
+  const labelWidth = 7;
+  const lineHeight = 2.55;
+  const availableLines = Math.max(1, Math.min(2, Math.floor((maxY - y) / lineHeight) + 1));
+  const nameLines = splitPdfTextToFit(doc, name, maxWidth - labelWidth, availableLines);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(4.9);
+  doc.setTextColor(104, 112, 125);
+  doc.text(label, x, y);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(4.9);
+  doc.setTextColor(27, 29, 35);
+  for (const line of nameLines) {
+    if (y > maxY) break;
+    doc.text(line, x + labelWidth, y);
+    y += lineHeight;
+  }
+
+  return y + 0.5;
+}
+
+function splitPdfTextToFit(doc, text, maxWidth, maxLines) {
+  const lines = doc.splitTextToSize(text, maxWidth);
+  if (lines.length <= maxLines) return lines;
+
+  const fitted = lines.slice(0, maxLines);
+  fitted[maxLines - 1] = ellipsizePdfText(doc, lines.slice(maxLines - 1).join(" "), maxWidth);
+  return fitted;
+}
+
+function ellipsizePdfText(doc, text, maxWidth) {
+  let result = String(text);
+  while (result.length > 1 && doc.getTextWidth(`${result}...`) > maxWidth) {
+    result = result.slice(0, -1).trimEnd();
+  }
+  return `${result}...`;
+}
+
+function capitalize(value) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function sumTotals(rows) {
