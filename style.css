@@ -1,121 +1,334 @@
+:root {
+  color-scheme: light;
+  --ink: #1b1d23;
+  --muted: #68707d;
+  --line: #d9dee7;
+  --paper: #fbfbf8;
+  --panel: #ffffff;
+  --blue: #27476e;
+  --teal: #287b75;
+  --gold: #b58b35;
+  --red: #b54a3a;
+  --shadow: 0 10px 28px rgba(36, 42, 52, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
-    line-height: 1.6;
+  margin: 0;
+  min-width: 320px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-header {
-    background-color: #337ab7; /* Azul */
-    color: #fff;
-    padding: 1rem 0;
-    text-align: center;
+button,
+input,
+textarea {
+  font: inherit;
 }
 
-main {
-    padding: 20px;
-    max-width: 1200px;
-    margin: auto;
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-end;
+  padding: 22px 28px 18px;
+  border-bottom: 1px solid var(--line);
+  background: #ffffff;
 }
 
-#input-section, #output-section {
-    background-color: #fff;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+h1 {
+  font-size: clamp(26px, 4vw, 44px);
+  line-height: 1;
 }
 
 h2 {
-    margin-top: 0;
+  font-size: 15px;
 }
 
-label {
-    display: block;
-    margin-top: 10px;
-    margin-bottom: 5px;
-    font-weight: bold;
+.topbar__meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
-input[type="date"], textarea, select {
-    width: calc(100% - 22px); /* Ajustar padding y border */
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
+.topbar__meta span,
+.panel-heading span {
+  min-height: 28px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  background: #f5f7f8;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
-textarea {
-    resize: vertical;
+.workspace {
+  width: min(1500px, 100%);
+  margin: 0 auto;
+  padding: 18px 18px 32px;
 }
 
-button {
-    display: inline-block;
-    background-color: #5cb85c; /* Verde */
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-right: 10px;
-    margin-top: 10px; /* Espacio superior para botones */
+.toolbar {
+  display: grid;
+  grid-template-columns: 170px 110px minmax(220px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 12px;
 }
 
-button:hover {
-    opacity: 0.9;
+.field {
+  display: grid;
+  gap: 5px;
 }
 
-#downloadPdfButton {
-    background-color: #f0ad4e; /* Naranja */
+.field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
-#clearButton {
-    background-color: #d9534f; /* Rojo */
+.field input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 0 11px;
 }
 
-#calendarTableContainer table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    font-size: 0.9em; /* Un poco más pequeño para que quepa más */
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
-#calendarTableContainer th, #calendarTableContainer td {
-    border: 1px solid #ddd;
-    padding: 8px; /* Reducir padding para compacidad */
-    text-align: left;
+.button {
+  height: 42px;
+  min-width: 64px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--ink);
+  padding: 0 14px;
+  cursor: pointer;
+  font-weight: 800;
 }
 
-#calendarTableContainer th {
-    background-color: #337ab7; /* Azul para encabezados de tabla */
-    color: white;
-    font-weight: bold;
-}
-#calendarTableContainer tr:nth-child(even) {
-    background-color: #f9f9f9; /* Filas alternas */
+.button:hover {
+  border-color: var(--blue);
 }
 
-footer {
-    text-align: center;
-    padding: 20px;
-    background-color: #333;
-    color: #fff;
+.button--primary {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #ffffff;
 }
 
-/* Ocultar elementos que no queremos imprimir con window.print (aunque ahora usamos PDF) */
+.button--quiet {
+  color: var(--muted);
+}
+
+.alerts {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.alert {
+  padding: 10px 12px;
+  border-left: 4px solid var(--gold);
+  background: #fff8e8;
+  color: #604815;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.alert--ok {
+  border-left-color: var(--teal);
+  background: #eef8f6;
+  color: #15504c;
+}
+
+.alert--error {
+  border-left-color: var(--red);
+  background: #fff0ed;
+  color: #74291e;
+}
+
+.rosters,
+.summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.roster-panel,
+.summary article,
+.schedule {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.roster-panel textarea {
+  display: block;
+  width: 100%;
+  height: 300px;
+  resize: vertical;
+  border: 0;
+  padding: 12px;
+  color: var(--ink);
+  line-height: 1.55;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.roster-panel textarea:focus,
+.field input:focus {
+  outline: 2px solid rgba(40, 123, 117, 0.32);
+  outline-offset: -2px;
+}
+
+.summary-list {
+  max-height: 280px;
+  overflow: auto;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px 92px;
+  gap: 8px;
+  align-items: center;
+  min-height: 36px;
+  padding: 7px 12px;
+  border-bottom: 1px solid #edf0f4;
+  font-size: 12px;
+}
+
+.summary-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.summary-row strong {
+  text-align: right;
+}
+
+.summary-row small {
+  color: var(--muted);
+  text-align: right;
+}
+
+.table-wrap {
+  overflow: auto;
+  max-height: 56vh;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+th,
+td {
+  border-bottom: 1px solid #edf0f4;
+  padding: 9px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #222c3a;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+@media (max-width: 980px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .toolbar,
+  .rosters,
+  .summary {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .roster-panel textarea {
+    height: 230px;
+  }
+
+  table {
+    min-width: 900px;
+  }
+}
+
 @media print {
-    body > header, body > main > #input-section, body > footer, #downloadPdfButton, #clearButton, #generateButton {
-        display: none !important;
-    }
-    body > main, body > main > #output-section {
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        box-shadow: none;
-        border: none;
-    }
+  .topbar,
+  .toolbar,
+  .alerts,
+  .rosters,
+  .summary {
+    display: none;
+  }
+
+  .workspace {
+    padding: 0;
+  }
+
+  .schedule {
+    border: 0;
+    box-shadow: none;
+  }
+
+  .table-wrap {
+    max-height: none;
+    overflow: visible;
+  }
 }
