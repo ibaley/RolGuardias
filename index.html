@@ -78,11 +78,21 @@
     </section>
 
     <section class="schedule" aria-label="Calendario generado">
-      <div class="panel-heading">
-        <h2>Calendario</h2>
-        <span id="visibleRowsLabel">0 visibles</span>
+      <div class="panel-heading schedule-heading">
+        <div class="schedule-heading__title">
+          <h2>Calendario</h2>
+          <span id="visibleRowsLabel">0 visibles</span>
+        </div>
+        <div class="view-toggle" role="group" aria-label="Vista del calendario">
+          <button id="tableViewButton" class="view-toggle__button is-active" type="button" aria-pressed="true">
+            Tabla
+          </button>
+          <button id="monthViewButton" class="view-toggle__button" type="button" aria-pressed="false">
+            Calendario
+          </button>
+        </div>
       </div>
-      <div class="table-wrap">
+      <div id="tableView" class="table-wrap">
         <table>
           <thead>
             <tr>
@@ -96,6 +106,7 @@
           <tbody id="scheduleBody"></tbody>
         </table>
       </div>
+      <div id="monthView" class="month-view" hidden></div>
     </section>
   </main>
 

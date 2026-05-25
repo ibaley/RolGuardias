@@ -117,6 +117,30 @@ export function summarizeSchedule(rows) {
   };
 }
 
+export function groupScheduleRowsByMonth(rows) {
+  const months = [];
+  const monthByKey = new Map();
+
+  for (const row of rows) {
+    const date = parseLocalDate(row.isoDate);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+    if (!monthByKey.has(key)) {
+      const month = {
+        key,
+        label: `${MONTHS[date.getMonth()]} ${date.getFullYear()}`,
+        rows: [],
+      };
+      monthByKey.set(key, month);
+      months.push(month);
+    }
+
+    monthByKey.get(key).rows.push(row);
+  }
+
+  return months;
+}
+
 export function formatSpanishDate(date) {
   return `${WEEKDAYS[date.getDay()]}, ${date.getDate()} de ${MONTHS[date.getMonth()]} de ${date.getFullYear()}`;
 }

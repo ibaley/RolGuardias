@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   generateSchedule,
+  groupScheduleRowsByMonth,
   parseRoster,
   summarizeSchedule,
   validateRosters,
@@ -87,6 +88,39 @@ test("summarizeSchedule counts first, second, and total assignments", () => {
     second: 1,
     total: 2,
   });
+});
+
+test("groupScheduleRowsByMonth groups generated Thursdays by Spanish month", () => {
+  const schedule = generateSchedule({
+    startDate: "2026-06-25",
+    weeks: 3,
+    rosters: {
+      santaFe: ["A", "B", "C"],
+      observatorio: ["X", "Y", "Z"],
+    },
+  });
+
+  const months = groupScheduleRowsByMonth(schedule.rows);
+
+  assert.deepEqual(
+    months.map((month) => ({
+      key: month.key,
+      label: month.label,
+      dates: month.rows.map((row) => row.isoDate),
+    })),
+    [
+      {
+        key: "2026-06",
+        label: "junio 2026",
+        dates: ["2026-06-25"],
+      },
+      {
+        key: "2026-07",
+        label: "julio 2026",
+        dates: ["2026-07-02", "2026-07-09"],
+      },
+    ],
+  );
 });
 
 test("validateRosters reports duplicate names and cross-campus duplicates", () => {

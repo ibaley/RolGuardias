@@ -1,6 +1,7 @@
 import { scheduleToCsv } from "./src/csv.js";
 import {
   generateSchedule,
+  groupScheduleRowsByMonth,
   normalizeNameKey,
   parseRoster,
   summarizeSchedule,
@@ -31,6 +32,10 @@ const elements = {
   observatorioSummary: document.querySelector("#observatorioSummary"),
   santaFeAssignments: document.querySelector("#santaFeAssignments"),
   observatorioAssignments: document.querySelector("#observatorioAssignments"),
+  tableViewButton: document.querySelector("#tableViewButton"),
+  monthViewButton: document.querySelector("#monthViewButton"),
+  tableView: document.querySelector("#tableView"),
+  monthView: document.querySelector("#monthView"),
   scheduleBody: document.querySelector("#scheduleBody"),
   periodLabel: document.querySelector("#periodLabel"),
   totalRowsLabel: document.querySelector("#totalRowsLabel"),
@@ -38,6 +43,7 @@ const elements = {
 };
 
 let currentSchedule = null;
+let currentView = initialScheduleView();
 
 boot();
 
@@ -45,6 +51,7 @@ function boot() {
   loadInitialState();
   bindEvents();
   updateRosterCounts();
+  setScheduleView(currentView);
   generate();
 }
 
@@ -54,6 +61,8 @@ function bindEvents() {
   elements.csvButton.addEventListener("click", downloadCsv);
   elements.pdfButton.addEventListener("click", downloadPdf);
   elements.searchInput.addEventListener("input", renderScheduleRows);
+  elements.tableViewButton.addEventListener("click", () => setScheduleView("table"));
+  elements.monthViewButton.addEventListener("click", () => setScheduleView("month"));
   elements.santaFeRoster.addEventListener("input", updateRosterCounts);
   elements.observatorioRoster.addEventListener("input", updateRosterCounts);
 }
@@ -72,6 +81,11 @@ function readSavedState() {
   } catch {
     return null;
   }
+}
+
+function initialScheduleView() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("view") === "month" ? "month" : "table";
 }
 
 function saveState() {
@@ -160,6 +174,7 @@ function renderSummaryList(container, rows) {
 
 function renderScheduleRows() {
   elements.scheduleBody.innerHTML = "";
+  elements.monthView.innerHTML = "";
 
   if (!currentSchedule) {
     elements.visibleRowsLabel.textContent = "0 visibles";
@@ -181,6 +196,7 @@ function renderScheduleRows() {
     elements.scheduleBody.append(tr);
   }
 
+  renderMonthView(rows);
   elements.visibleRowsLabel.textContent = `${rows.length} visibles`;
 }
 
@@ -203,6 +219,92 @@ function rowMatches(row, query) {
   ].some((value) => normalizeNameKey(value).includes(query));
 }
 
+function setScheduleView(view) {
+  currentView = view;
+  const showMonth = view === "month";
+  elements.tableView.hidden = showMonth;
+  elements.monthView.hidden = !showMonth;
+  elements.tableViewButton.classList.toggle("is-active", !showMonth);
+  elements.monthViewButton.classList.toggle("is-active", showMonth);
+  elements.tableViewButton.setAttribute("aria-pressed", String(!showMonth));
+  elements.monthViewButton.setAttribute("aria-pressed", String(showMonth));
+}
+
+function renderMonthView(rows) {
+  const months = groupScheduleRowsByMonth(rows);
+
+  if (months.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-months";
+    empty.textContent = "Sin guardias visibles.";
+    elements.monthView.append(empty);
+    return;
+  }
+
+  for (const month of months) {
+    const panel = document.createElement("article");
+    panel.className = "month-panel";
+
+    const heading = document.createElement("div");
+    heading.className = "month-panel__heading";
+    const title = document.createElement("h3");
+    title.textContent = month.label;
+    const count = document.createElement("span");
+    count.textContent = `${month.rows.length} jueves`;
+    heading.append(title, count);
+
+    const weeks = document.createElement("div");
+    weeks.className = "month-weeks";
+    for (const row of month.rows) {
+      weeks.append(renderMonthWeek(row));
+    }
+
+    panel.append(heading, weeks);
+    elements.monthView.append(panel);
+  }
+}
+
+function renderMonthWeek(row) {
+  const week = document.createElement("section");
+  week.className = "month-week";
+
+  const date = document.createElement("time");
+  date.className = "month-week__date";
+  date.dateTime = row.isoDate;
+  const day = document.createElement("strong");
+  day.textContent = String(Number(row.isoDate.slice(8, 10)));
+  const weekday = document.createElement("span");
+  weekday.textContent = "jueves";
+  date.append(day, weekday);
+
+  week.append(
+    date,
+    renderCampusBlock("Santa Fe", row.santaFeSecond, row.santaFeFirst),
+    renderCampusBlock("Observatorio", row.observatorioSecond, row.observatorioFirst),
+  );
+  return week;
+}
+
+function renderCampusBlock(campus, second, first) {
+  const block = document.createElement("div");
+  block.className = "month-campus";
+  const title = document.createElement("strong");
+  title.textContent = campus;
+  block.append(title, renderCall("2do", second), renderCall("1er", first));
+  return block;
+}
+
+function renderCall(label, name) {
+  const row = document.createElement("span");
+  row.className = "month-call";
+  const callLabel = document.createElement("b");
+  callLabel.textContent = label;
+  const callName = document.createElement("span");
+  callName.textContent = name;
+  row.append(callLabel, callName);
+  return row;
+}
+
 function updateRosterCounts() {
   elements.santaFeCount.textContent = `${parseRoster(elements.santaFeRoster.value).length} integrantes`;
   elements.observatorioCount.textContent = `${parseRoster(elements.observatorioRoster.value).length} integrantes`;
@@ -222,6 +324,7 @@ function clearOutput() {
   elements.santaFeSummary.innerHTML = "";
   elements.observatorioSummary.innerHTML = "";
   elements.scheduleBody.innerHTML = "";
+  elements.monthView.innerHTML = "";
   elements.santaFeAssignments.textContent = "0";
   elements.observatorioAssignments.textContent = "0";
   elements.periodLabel.textContent = "Sin generar";
