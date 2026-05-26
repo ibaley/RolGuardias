@@ -93,6 +93,7 @@ export function generateSchedule({ startDate, weeks, rosters }) {
     const observatorio = assignmentForWeek(validation.rosters.observatorio, weekIndex);
 
     rows.push({
+      weekNumber: weekIndex + 1,
       isoDate: toIsoDate(currentDate),
       displayDate: formatSpanishDate(currentDate),
       santaFeSecond: santaFe.second,

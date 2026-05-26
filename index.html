@@ -49,7 +49,14 @@
           <h2>Santa Fe</h2>
           <span id="santaFeCount">0</span>
         </div>
-        <textarea id="santaFeRoster" spellcheck="false"></textarea>
+        <textarea id="santaFeRoster" class="roster-source" spellcheck="false" hidden></textarea>
+        <div class="token-editor">
+          <div class="token-add">
+            <textarea id="santaFeAddInput" class="token-add__input" rows="2" spellcheck="false" placeholder="Pegar nombres"></textarea>
+            <button id="santaFeAddButton" class="button" type="button">Agregar</button>
+          </div>
+          <ol id="santaFeTokens" class="token-list" aria-label="Integrantes Santa Fe"></ol>
+        </div>
       </article>
 
       <article class="roster-panel">
@@ -57,7 +64,14 @@
           <h2>Observatorio</h2>
           <span id="observatorioCount">0</span>
         </div>
-        <textarea id="observatorioRoster" spellcheck="false"></textarea>
+        <textarea id="observatorioRoster" class="roster-source" spellcheck="false" hidden></textarea>
+        <div class="token-editor">
+          <div class="token-add">
+            <textarea id="observatorioAddInput" class="token-add__input" rows="2" spellcheck="false" placeholder="Pegar nombres"></textarea>
+            <button id="observatorioAddButton" class="button" type="button">Agregar</button>
+          </div>
+          <ol id="observatorioTokens" class="token-list" aria-label="Integrantes Observatorio"></ol>
+        </div>
       </article>
     </section>
 
@@ -97,6 +111,7 @@
         <table>
           <thead>
             <tr>
+              <th>#</th>
               <th>Fecha</th>
               <th>Santa Fe - 2do</th>
               <th>Santa Fe - 1er</th>

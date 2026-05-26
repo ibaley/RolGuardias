@@ -25,11 +25,16 @@ test("generateSchedule snaps start date to the next Thursday and rotates second 
 
   assert.equal(schedule.startDateIso, "2026-06-04");
   assert.deepEqual(
-    schedule.rows.map((row) => [row.isoDate, row.santaFeFirst, row.santaFeSecond]),
+    schedule.rows.map((row) => [
+      row.weekNumber,
+      row.isoDate,
+      row.santaFeFirst,
+      row.santaFeSecond,
+    ]),
     [
-      ["2026-06-04", "A", "B"],
-      ["2026-06-11", "B", "C"],
-      ["2026-06-18", "C", "A"],
+      [1, "2026-06-04", "A", "B"],
+      [2, "2026-06-11", "B", "C"],
+      [3, "2026-06-18", "C", "A"],
     ],
   );
 });

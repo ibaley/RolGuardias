@@ -1,5 +1,6 @@
 import { buildCalendarPdfPages } from "./src/calendar-pdf-data.js";
 import { scheduleToCsv } from "./src/csv.js";
+import { addRosterNames, moveRosterName, removeRosterName } from "./src/roster-tokens.js";
 import {
   generateSchedule,
   groupScheduleRowsByMonth,
@@ -28,6 +29,12 @@ const elements = {
   validationMessages: document.querySelector("#validationMessages"),
   santaFeRoster: document.querySelector("#santaFeRoster"),
   observatorioRoster: document.querySelector("#observatorioRoster"),
+  santaFeAddInput: document.querySelector("#santaFeAddInput"),
+  santaFeAddButton: document.querySelector("#santaFeAddButton"),
+  santaFeTokens: document.querySelector("#santaFeTokens"),
+  observatorioAddInput: document.querySelector("#observatorioAddInput"),
+  observatorioAddButton: document.querySelector("#observatorioAddButton"),
+  observatorioTokens: document.querySelector("#observatorioTokens"),
   santaFeCount: document.querySelector("#santaFeCount"),
   observatorioCount: document.querySelector("#observatorioCount"),
   santaFeSummary: document.querySelector("#santaFeSummary"),
@@ -44,14 +51,31 @@ const elements = {
   visibleRowsLabel: document.querySelector("#visibleRowsLabel"),
 };
 
+const ROSTER_EDITORS = {
+  santaFe: {
+    source: elements.santaFeRoster,
+    addInput: elements.santaFeAddInput,
+    addButton: elements.santaFeAddButton,
+    list: elements.santaFeTokens,
+  },
+  observatorio: {
+    source: elements.observatorioRoster,
+    addInput: elements.observatorioAddInput,
+    addButton: elements.observatorioAddButton,
+    list: elements.observatorioTokens,
+  },
+};
+
 let currentSchedule = null;
 let currentView = initialScheduleView();
+let draggedRosterToken = null;
 
 boot();
 
 function boot() {
   loadInitialState();
   bindEvents();
+  syncRosterTokenEditors();
   updateRosterCounts();
   setScheduleView(currentView);
   generate();
@@ -66,8 +90,8 @@ function bindEvents() {
   elements.searchInput.addEventListener("input", renderScheduleRows);
   elements.tableViewButton.addEventListener("click", () => setScheduleView("table"));
   elements.monthViewButton.addEventListener("click", () => setScheduleView("month"));
-  elements.santaFeRoster.addEventListener("input", updateRosterCounts);
-  elements.observatorioRoster.addEventListener("input", updateRosterCounts);
+  bindRosterEditor("santaFe");
+  bindRosterEditor("observatorio");
 }
 
 function loadInitialState() {
@@ -190,6 +214,7 @@ function renderScheduleRows() {
   for (const row of rows) {
     const tr = document.createElement("tr");
     appendTableCells(tr, [
+      row.weekNumber,
       row.displayDate,
       row.santaFeSecond,
       row.santaFeFirst,
@@ -278,7 +303,9 @@ function renderMonthWeek(row) {
   day.textContent = String(Number(row.isoDate.slice(8, 10)));
   const weekday = document.createElement("span");
   weekday.textContent = "jueves";
-  date.append(day, weekday);
+  const weekNumber = document.createElement("small");
+  weekNumber.textContent = `Semana ${row.weekNumber}`;
+  date.append(day, weekday, weekNumber);
 
   week.append(
     date,
@@ -342,6 +369,9 @@ function resetDefaults() {
   elements.searchInput.value = "";
   elements.santaFeRoster.value = DEFAULT_ROSTERS.santaFe.join("\n");
   elements.observatorioRoster.value = DEFAULT_ROSTERS.observatorio.join("\n");
+  elements.santaFeAddInput.value = "";
+  elements.observatorioAddInput.value = "";
+  syncRosterTokenEditors();
   updateRosterCounts();
   generate();
 }
@@ -374,6 +404,7 @@ function downloadPdf() {
   const doc = new jsPdf({ orientation: "landscape", unit: "mm", format: "a4" });
   doc.autoTable({
     head: [[
+      "Semana",
       "Fecha",
       "Santa Fe - 2do llamado",
       "Santa Fe - 1er llamado",
@@ -381,6 +412,7 @@ function downloadPdf() {
       "Observatorio - 1er llamado",
     ]],
     body: currentSchedule.rows.map((row) => [
+      row.weekNumber,
       row.displayDate,
       row.santaFeSecond,
       row.santaFeFirst,
@@ -513,7 +545,7 @@ function drawCalendarCell(doc, cell, x, y, width, height) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(5);
   doc.setTextColor(104, 112, 125);
-  doc.text("jueves", x + width - 2, y + 5, { align: "right" });
+  doc.text(`S${cell.assignment.weekNumber}`, x + width - 2, y + 5, { align: "right" });
 
   const maxY = y + height - 2;
   let textY = y + 9;
@@ -571,4 +603,168 @@ function capitalize(value) {
 
 function sumTotals(rows) {
   return rows.reduce((total, row) => total + row.total, 0);
+}
+
+function bindRosterEditor(campus) {
+  const editor = ROSTER_EDITORS[campus];
+  editor.addButton.addEventListener("click", () => addRosterTokens(campus));
+  editor.addInput.addEventListener("keydown", (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      event.preventDefault();
+      addRosterTokens(campus);
+    }
+  });
+  editor.list.addEventListener("click", (event) => handleRosterTokenClick(event, campus));
+  editor.list.addEventListener("dragstart", (event) => handleRosterDragStart(event, campus));
+  editor.list.addEventListener("dragover", (event) => handleRosterDragOver(event, campus));
+  editor.list.addEventListener("dragleave", (event) => handleRosterDragLeave(event));
+  editor.list.addEventListener("drop", (event) => handleRosterDrop(event, campus));
+  editor.list.addEventListener("dragend", () => clearRosterDragState());
+}
+
+function syncRosterTokenEditors() {
+  renderRosterTokens("santaFe");
+  renderRosterTokens("observatorio");
+}
+
+function rosterNames(campus) {
+  return parseRoster(ROSTER_EDITORS[campus].source.value);
+}
+
+function setRosterNames(campus, names) {
+  ROSTER_EDITORS[campus].source.value = names.join("\n");
+  renderRosterTokens(campus);
+  updateRosterCounts();
+  generate();
+}
+
+function addRosterTokens(campus) {
+  const editor = ROSTER_EDITORS[campus];
+  const nextNames = addRosterNames(rosterNames(campus), editor.addInput.value);
+  editor.addInput.value = "";
+  setRosterNames(campus, nextNames);
+}
+
+function renderRosterTokens(campus) {
+  const editor = ROSTER_EDITORS[campus];
+  editor.list.innerHTML = "";
+
+  rosterNames(campus).forEach((name, index) => {
+    const item = document.createElement("li");
+    item.className = "roster-token";
+    item.dataset.index = String(index);
+
+    const number = document.createElement("span");
+    number.className = "roster-token__number";
+    number.textContent = String(index + 1);
+
+    const handle = document.createElement("button");
+    handle.className = "roster-token__handle";
+    handle.type = "button";
+    handle.draggable = true;
+    handle.title = "Arrastrar";
+    handle.setAttribute("aria-label", `Arrastrar ${name}`);
+    handle.textContent = "≡";
+
+    const label = document.createElement("span");
+    label.className = "roster-token__name";
+    label.textContent = name;
+
+    const actions = document.createElement("div");
+    actions.className = "roster-token__actions";
+    const upButton = rosterTokenButton("up", "↑", `Subir ${name}`);
+    const downButton = rosterTokenButton("down", "↓", `Bajar ${name}`);
+    const removeButton = rosterTokenButton("remove", "×", `Quitar ${name}`);
+    upButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setRosterNames(campus, moveRosterName(rosterNames(campus), index, index - 1));
+    });
+    downButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setRosterNames(campus, moveRosterName(rosterNames(campus), index, index + 1));
+    });
+    removeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setRosterNames(campus, removeRosterName(rosterNames(campus), index));
+    });
+    actions.append(upButton, downButton, removeButton);
+
+    item.append(number, handle, label, actions);
+    editor.list.append(item);
+  });
+}
+
+function rosterTokenButton(action, label, ariaLabel) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.action = action;
+  button.title = ariaLabel;
+  button.setAttribute("aria-label", ariaLabel);
+  button.textContent = label;
+  return button;
+}
+
+function handleRosterTokenClick(event, campus) {
+  const button = event.target.closest("button[data-action]");
+  const item = event.target.closest(".roster-token");
+  if (!button || !item) return;
+
+  const index = Number(item.dataset.index);
+  const names = rosterNames(campus);
+  if (button.dataset.action === "up") {
+    setRosterNames(campus, moveRosterName(names, index, index - 1));
+  }
+  if (button.dataset.action === "down") {
+    setRosterNames(campus, moveRosterName(names, index, index + 1));
+  }
+  if (button.dataset.action === "remove") {
+    setRosterNames(campus, removeRosterName(names, index));
+  }
+}
+
+function handleRosterDragStart(event, campus) {
+  const item = event.target.closest(".roster-token");
+  if (!item) return;
+
+  draggedRosterToken = {
+    campus,
+    index: Number(item.dataset.index),
+  };
+  item.classList.add("is-dragging");
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", item.dataset.index);
+}
+
+function handleRosterDragOver(event, campus) {
+  if (!draggedRosterToken || draggedRosterToken.campus !== campus) return;
+
+  event.preventDefault();
+  const item = event.target.closest(".roster-token");
+  ROSTER_EDITORS[campus].list.querySelectorAll(".is-drop-target").forEach((target) => {
+    target.classList.remove("is-drop-target");
+  });
+  if (item) item.classList.add("is-drop-target");
+}
+
+function handleRosterDragLeave(event) {
+  const item = event.target.closest(".roster-token");
+  if (item) item.classList.remove("is-drop-target");
+}
+
+function handleRosterDrop(event, campus) {
+  if (!draggedRosterToken || draggedRosterToken.campus !== campus) return;
+
+  event.preventDefault();
+  const item = event.target.closest(".roster-token");
+  const names = rosterNames(campus);
+  const targetIndex = item ? Number(item.dataset.index) : names.length - 1;
+  setRosterNames(campus, moveRosterName(names, draggedRosterToken.index, targetIndex));
+  clearRosterDragState();
+}
+
+function clearRosterDragState() {
+  document.querySelectorAll(".is-dragging, .is-drop-target").forEach((item) => {
+    item.classList.remove("is-dragging", "is-drop-target");
+  });
+  draggedRosterToken = null;
 }

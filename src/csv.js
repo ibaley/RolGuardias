@@ -1,4 +1,5 @@
 const HEADERS = [
+  "Semana",
   "Fecha",
   "Santa Fe - 2do llamado",
   "Santa Fe - 1er llamado",
@@ -11,6 +12,7 @@ export function scheduleToCsv(rows) {
   for (const row of rows) {
     lines.push(
       [
+        row.weekNumber,
         row.displayDate,
         row.santaFeSecond,
         row.santaFeFirst,
